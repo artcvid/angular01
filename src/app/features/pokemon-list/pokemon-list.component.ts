@@ -33,6 +33,7 @@ import { switchMap } from 'rxjs';
       <button (click)="onSearchPikachu()">Buscar Pikachu</button>
     </div>
 
+    <!-- @let pokemon = (pokemon$ | async); -->
     @if (state.pokemon) {
       <div class="pokemon-card">
         <h2>{{ formatName(state.pokemon.name) }}</h2>
@@ -48,10 +49,16 @@ import { switchMap } from 'rxjs';
         <p>
           <strong>Tipos:</strong>
           @for (type of state.pokemon.types; track type.type.name) {
-            <span class="type-badge">{{ type.type.name }}</span>
+            <span class="type-badge" [style.backgroundColor]="getTypeColor(type.type.name)">{{ type.type.name }}</span>
           }
         </p>
         <app-nav-button [pokemonId]="state.pokemon.id" text="View Details" url="/pokemon-list"> </app-nav-button>
+      </div>
+      <div class="nav-button-group">
+        <button class="nav-first" (click)="goFirst()"><<</button>
+        <button class="nav-back" (click)="goBack(state.pokemon.id)"><</button>
+        <button class="nav-forward" (click)="goForward(state.pokemon.id)">></button>
+        <button class="nav-last" (click)="goLast()">>></button>
       </div>
     }
 
@@ -95,6 +102,14 @@ import { switchMap } from 'rxjs';
         justify-content: center;
       }
 
+      .nav-button-group {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
       button {
         padding: 10px 20px;
         color: white;
@@ -107,22 +122,22 @@ import { switchMap } from 'rxjs';
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
-      button:first-of-type {
+      .button-group button:first-of-type {
         background-color: #ef5350;
       }
 
-      button:first-of-type:hover {
+      .button-group button:first-of-type:hover {
         background-color: #e53935;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
       }
 
-      button:last-of-type {
+      .button-group button:last-of-type {
         background-color: #fdd835;
         color: #424242;
       }
 
-      button:last-of-type:hover {
+      .button-group button:last-of-type:hover {
         background-color: #fbc02d;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -131,6 +146,19 @@ import { switchMap } from 'rxjs';
       button:active {
         transform: translateY(0) scale(0.98);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-first, .nav-last {
+        background-color: #9c27b0;
+      }
+      .nav-first:hover, .nav-last:hover {
+        background-color: #7b1fa2;
+      }
+      .nav-back, .nav-forward {
+        background-color: #2196f3;
+      }
+      .nav-back:hover, .nav-forward:hover {
+        background-color: #1976d2;
       }
 
       .pokemon-card {
@@ -178,7 +206,6 @@ import { switchMap } from 'rxjs';
 
       .type-badge {
         display: inline-block;
-        background-color: #78c850;
         color: white;
         padding: 5px 12px;
         border-radius: 12px;
@@ -224,6 +251,28 @@ export class PokemonListComponent implements OnInit {
         this.loadPokemon(() => this.pokemonDataService.getPokemonById(pokemonId));
       }
     });
+  }
+
+  pokemon$ = this.route.params.pipe(
+    switchMap((params) => this.pokemonDataService.getPokemonById(params['id'])),
+  );
+
+  goBack(pokemonId: string | number): void {
+    const id = <number>pokemonId - 1
+    this.router.navigate([], { queryParams: { id } });
+  }
+
+  goForward(pokemonId: string | number): void {
+    const id = <number>pokemonId + 1
+    this.router.navigate([], { queryParams: { id } });
+  }
+
+  goFirst(): void {
+    this.router.navigate([], { queryParams: { id: 1 } });
+  }
+
+  goLast(): void {
+    this.router.navigate([], { queryParams: { id: 1025 } })
   }
 
   onLoadRandomPokemon(id: number = generateRandomPokemonId()): void {
@@ -282,5 +331,29 @@ export class PokemonListComponent implements OnInit {
 
   protected formatName(name: string): string {
     return formatPokemonName(name);
+  }
+
+  protected getTypeColor(type: string): string {
+    const typeColors: { [key: string]: string } = {
+      normal: '#A8A77A',
+      fire: '#EE8130',
+      water: '#6390F0',
+      electric: '#F7D02C',
+      grass: '#7AC74C',
+      ice: '#96D9D6',
+      fighting: '#C22E28',
+      poison: '#A33EA1',
+      ground: '#E2BF65',
+      flying: '#A98FF3',
+      psychic: '#F95587',
+      bug: '#A6B91A',
+      rock: '#B6A136',
+      ghost: '#735797',
+      dragon: '#6F35FC',
+      dark: '#705746',
+      steel: '#B7B7CE',
+      fairy: '#D685AD',
+    };
+    return typeColors[type.toLowerCase()] || '#777777'; // Fallback color
   }
 }
