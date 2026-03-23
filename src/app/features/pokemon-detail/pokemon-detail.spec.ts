@@ -1,0 +1,23 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { PokemonDetailComponent } from './pokemon-detail';
+
+describe('PokemonDetailComponent', () => {
+  let component: PokemonDetailComponent;
+  let fixture: ComponentFixture<PokemonDetailComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [PokemonDetailComponent],
+    })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(PokemonDetailComponent);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
