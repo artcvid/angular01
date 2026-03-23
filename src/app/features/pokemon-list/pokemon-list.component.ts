@@ -22,214 +22,175 @@ import { switchMap } from 'rxjs';
   selector: 'app-pokemon-list',
   standalone: true,
   imports: [NavButton],
-  host: {
-    class: 'pokemon-container',
-  },
   template: `
-    <h1>:: Pokémon API Demo ::</h1>
+    <div class="container py-5" style="max-width: 550px;">
+      <h1 class="text-center mb-5 display-4 fw-black pokemon-title">
+        Poké-Explorer
+      </h1>
 
-    <div class="button-group">
-      <button (click)="onLoadRandomPokemon()">Cargar Pokémones</button>
-      <button (click)="onSearchPikachu()">Buscar Pikachu</button>
+      <div class="d-flex justify-content-center gap-3 mb-5">
+        <button class="btn btn-danger btn-lg fw-bold rounded-pill px-4 border border-3 border-dark shadow d-flex align-items-center gap-2" style="background-color: #ff3334;" (click)="onLoadRandomPokemon()">
+          Random
+        </button>
+        <button class="btn btn-warning text-dark btn-lg fw-bold rounded-pill px-4 border border-3 border-dark shadow d-flex align-items-center gap-2" style="background-color: #ffcb05;" (click)="onSearchPikachu()">
+          Pikachu
+        </button>
+      </div>
+
+      <!-- @let pokemon = (pokemon$ | async); -->
+      @if (state.pokemon) {
+        <div class="card pokemon-card border-4 border-dark rounded-5 overflow-hidden shadow-lg mx-auto" style="max-width: 420px; background-color: #f8f9fa;">
+          
+          <!-- Image Section  -->
+          <div class="position-relative text-center pt-5 pb-4 img-backdrop" [style.backgroundColor]="getTypeColor(state.pokemon.types[0].type.name)">
+            <span class="position-absolute top-0 start-0 m-3 badge bg-white text-dark border border-2 border-dark fs-5 rounded-pill shadow-sm">
+              #{{ state.pokemon.id.toString().padStart(3, '0') }}
+            </span>
+            <div class="sprite-container mx-auto">
+              <img
+                [src]="state.pokemon.sprites.front_default"
+                [alt]="state.pokemon.name"
+                class="pokemon-img"
+              />
+            </div>
+          </div>
+
+          <!-- Detail Section -->
+          <div class="card-body p-4 bg-white text-center position-relative card-overlap border-top border-4 border-dark">
+            <h2 class="card-title text-capitalize fw-black mb-3 display-6">{{ formatName(state.pokemon.name) }}</h2>
+            
+            <div class="d-flex justify-content-center gap-2 mb-4">
+              @for (type of state.pokemon.types; track type.type.name) {
+                <span class="badge rounded-pill border border-2 border-dark text-capitalize px-3 py-2 fs-6 shadow-sm" [style.backgroundColor]="getTypeColor(type.type.name)">
+                  {{ type.type.name }}
+                </span>
+              }
+            </div>
+            
+            <div class="row g-2 mb-4 px-3">
+              <div class="col-6">
+                <div class="bg-light border border-2 border-secondary rounded-4 p-2 shadow-sm stat-box">
+                  <div class="text-muted small fw-bold text-uppercase">Altura</div>
+                  <div class="fw-bold fs-5">{{ convertHeight(state.pokemon.height) }} <span class="fs-6 text-muted">m</span></div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="bg-light border border-2 border-secondary rounded-4 p-2 shadow-sm stat-box">
+                  <div class="text-muted small fw-bold text-uppercase">Peso</div>
+                  <div class="fw-bold fs-5">{{ convertWeight(state.pokemon.weight) }} <span class="fs-6 text-muted">kg</span></div>
+                </div>
+              </div>
+            </div>
+            
+            <app-nav-button [pokemonId]="state.pokemon.id" text="View Details" url="/pokemon-list"></app-nav-button>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-center align-items-center gap-3 mt-5">
+          <button class="btn btn-dark fw-bold rounded-circle border border-3 border-secondary shadow nav-ctrl d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #4a4a4a;" (click)="goFirst()"><<</button>
+          <button class="btn border border-3 border-dark shadow nav-ctrl d-flex align-items-center justify-content-center fs-4" style="width: 65px; height: 50px; background-color: #e74c3c; color: white; border-radius: 15px;" (click)="goBack(state.pokemon.id)"><</button>
+          <button class="btn border border-3 border-dark shadow nav-ctrl d-flex align-items-center justify-content-center fs-4" style="width: 65px; height: 50px; background-color: #2ecc71; color: white; border-radius: 15px;" (click)="goForward(state.pokemon.id)">></button>
+          <button class="btn btn-dark fw-bold rounded-circle border border-3 border-secondary shadow nav-ctrl d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #4a4a4a;" (click)="goLast()">>></button>
+        </div>
+      }
+
+      @if (state.loading) {
+        <div class="text-center mt-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted fst-italic mt-2">Cargando...</p>
+        </div>
+      }
+
+      @if (state.error) {
+        <div class="alert alert-danger text-center mt-4 fw-bold shadow-sm" role="alert">
+          {{ state.error }}
+        </div>
+      }
     </div>
-
-    <!-- @let pokemon = (pokemon$ | async); -->
-    @if (state.pokemon) {
-      <div class="pokemon-card">
-        <h2>{{ formatName(state.pokemon.name) }}</h2>
-        <img
-          [src]="state.pokemon.sprites.front_default"
-          [alt]="state.pokemon.name"
-          width="200"
-          height="200"
-        />
-        <p><strong>ID:</strong> {{ state.pokemon.id }}</p>
-        <p><strong>Altura:</strong> {{ convertHeight(state.pokemon.height) }} m</p>
-        <p><strong>Peso:</strong> {{ convertWeight(state.pokemon.weight) }} kg</p>
-        <p>
-          <strong>Tipos:</strong>
-          @for (type of state.pokemon.types; track type.type.name) {
-            <span class="type-badge" [style.backgroundColor]="getTypeColor(type.type.name)">{{ type.type.name }}</span>
-          }
-        </p>
-        <app-nav-button [pokemonId]="state.pokemon.id" text="View Details" url="/pokemon-list"> </app-nav-button>
-      </div>
-      <div class="nav-button-group">
-        <button class="nav-first" (click)="goFirst()"><<</button>
-        <button class="nav-back" (click)="goBack(state.pokemon.id)"><</button>
-        <button class="nav-forward" (click)="goForward(state.pokemon.id)">></button>
-        <button class="nav-last" (click)="goLast()">>></button>
-      </div>
-    }
-
-    @if (state.loading) {
-      <p class="loading">Cargando...</p>
-    }
-
-    @if (state.error) {
-      <p class="error">{{ state.error }}</p>
-    }
   `,
   styles: [
     `
       :host {
         display: block;
-        background-color: #f0f2f5;
+        background-color: #f4f7f6;
+        background-image: radial-gradient(#d1d5db 2px, transparent 2px);
+        background-size: 30px 30px;
         min-height: 100vh;
-        padding-top: 20px;
-        padding-bottom: 20px;
       }
 
-      .pokemon-container {
-        padding: 20px;
-        max-width: 400px;
-        margin: 0 auto;
-        font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
-          'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+      .fw-black {
+        font-weight: 900;
       }
 
-      h1 {
-        text-align: center;
-        color: #2c3e50;
-        font-weight: 600;
-      }
-
-      .button-group {
-        margin: 20px 0;
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-      }
-
-      .nav-button-group {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        margin-top: 20px;
-      }
-
-      button {
-        padding: 10px 20px;
-        color: white;
-        border: none;
-        border-radius: 20px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        transition: all 0.2s ease-in-out;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .button-group button:first-of-type {
-        background-color: #ef5350;
-      }
-
-      .button-group button:first-of-type:hover {
-        background-color: #e53935;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .button-group button:last-of-type {
-        background-color: #fdd835;
-        color: #424242;
-      }
-
-      .button-group button:last-of-type:hover {
-        background-color: #fbc02d;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      button:active {
-        transform: translateY(0) scale(0.98);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-
-      .nav-first, .nav-last {
-        background-color: #9c27b0;
-      }
-      .nav-first:hover, .nav-last:hover {
-        background-color: #7b1fa2;
-      }
-      .nav-back, .nav-forward {
-        background-color: #2196f3;
-      }
-      .nav-back:hover, .nav-forward:hover {
-        background-color: #1976d2;
+      .pokemon-title {
+        color: #ffcb05;
+        -webkit-text-stroke: 2px #3b4cca;
+        text-shadow: 3px 3px 0 #3b4cca, 6px 6px 0 #000;
+        letter-spacing: 2px;
+        transform: rotate(-2deg);
       }
 
       .pokemon-card {
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 20px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        background-color: #ffffff;
         transition:
-          transform 0.3s ease,
+          transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
           box-shadow 0.3s ease;
       }
 
       .pokemon-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        transform: translateY(-8px) rotate(-1deg);
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.25) !important;
       }
 
-      .pokemon-card h2 {
-        margin: 0 0 15px 0;
-        color: #333;
-        font-size: 24px;
+      .img-backdrop {
+        box-shadow: inset 0 -15px 20px rgba(0,0,0,0.1);
+        transition: background-color 0.4s ease;
       }
 
-      .pokemon-card img {
-        background-color: #f5f5f5;
+      .sprite-container {
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
         border-radius: 50%;
-        margin: 10px auto 20px;
-        border: 4px solid #fff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      .pokemon-card:hover img {
-        transform: scale(1.05);
+      .card-overlap {
+        margin-top: -20px;
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
       }
 
-      .pokemon-card p {
-        margin: 10px 0;
-        color: #555;
-        font-size: 14px;
+      .pokemon-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(4px 4px 8px rgba(0,0,0,0.6));
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
 
-      .type-badge {
-        display: inline-block;
-        color: white;
-        padding: 5px 12px;
-        border-radius: 12px;
-        margin: 5px;
-        font-size: 12px;
-        font-weight: 500;
-        text-transform: capitalize;
+      .pokemon-card:hover .pokemon-img {
+        transform: scale(1.2) rotate(4deg);
       }
 
-      .loading {
-        text-align: center;
-        color: #666;
-        font-style: italic;
-        margin-top: 20px;
+      .nav-ctrl {
+        transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s ease;
       }
 
-      .error {
-        color: #d32f2f;
-        text-align: center;
-        margin-top: 20px;
-        padding: 10px;
-        background-color: #ffebee;
-        border-radius: 4px;
-        font-weight: bold;
+      .nav-ctrl:active {
+        transform: translateY(4px);
+        box-shadow: none !important;
+      }
+
+      .stat-box {
+        transition: transform 0.2s ease;
+      }
+      
+      .stat-box:hover {
+        transform: translateY(-3px);
       }
     `,
   ],
